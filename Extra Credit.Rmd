@@ -1,0 +1,99 @@
+---
+title: 'STOR 455 Group Project (Due 5pm on April 19th)'
+subtitle: "Kai Squared"
+output:
+  pdf_document: default
+  html_notebook: default
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+Anastasia Dai (30410535), Elizabeth Thompson (730084347), Lily Fishman (730406842), Joseph Bryson (730481377), Klaas van de Groep (730579245)
+
+# The Prediction (Required)
+Our prediction of the cumulative box office of "The Super Mario Bros. Movie" by May 5 is $529597413.
+
+```{r, include = FALSE}
+library(readxl)
+library(leaps)
+```
+ 
+```{r, include = FALSE}
+data <- read_xlsx("Book 3.xlsx")
+```
+# Summary of Justification (Required) 
+Prior to the creation of our model, our group read a scholarly article about the best predictors for box office success. The article, Predicting box-office success of motion pictures with neural networks, by Sharda et al, stated some of the most effective predictors included the MPAA rating, the number of stars in a movie, the category, whether or not the movie is a sequel, the special effects, and the number of theatres the movie was shown in. In addition to the predictors mentioned in the article, our group decided good predictors to include would be the current audience rating on rotten tomatoes, the cumulative earnings of day seven, twelve day and fourteen day, along with whether or not the movie was produced by universal studios or illumination studios. Unfortunately, Box Office Mojo did not update the 14-day domestic earnings data, so we were not able to include that in our prediction.
+
+
+# Data (Optional)
+```{r}
+data
+```
+# Analysis (Optional)
+ 
+```{r, include = FALSE}
+data$Seven <- as.numeric(gsub("\\.|", "", data$Seven))
+data$Theaters <- as.numeric(gsub("\\.|", "", data$Theaters))
+```
+ 
+```{r}
+mod1 = lm(ThirtyOne~Seven+Budget+UniversalDist+factor(ReleaseMonth)+MPAARating+Sequel+Theaters+Score+Twelve, data = data )
+summary(mod1)
+```
+```{r}
+all = regsubsets(ThirtyOne~Seven+Budget+UniversalDist+factor(ReleaseMonth)+MPAARating+Sequel+Theaters+Score+Twelve, data = data)
+summary(all)
+```
+```{r functions}
+ShowSubsets=function(regout){
+  z=summary(regout)
+  q=as.data.frame(z$outmat)
+  q$Rsq=round(z$rsq*100,2)
+  q$adjRsq=round(z$adjr2*100,2)
+  q$Cp=round(z$cp,2)
+  return(q)
+}
+```
+
+```{r}
+print.data.frame(ShowSubsets(all))
+```
+```{r class_10}
+# Fit the full model
+Full = lm(ThirtyOne~Seven+Budget+UniversalDist+factor(ReleaseMonth)+MPAARating+Sequel+Theaters+Score+Twelve, data = data)   
+
+# Find the MSE for the full model
+MSE=(summary(Full)$sigma)^2
+
+# Backward: use the step( ) function starting with the full model
+
+step(Full,scale=MSE)
+
+#R uses Cp (AIC) to pick next model
+
+```
+```{r class_11}
+
+# Start with a model with NO predictors
+none = lm(ThirtyOne~1, data=data)
+
+#Specify the direction
+step(none, scope=list(upper=Full), scale=MSE, direction= "forward")
+
+```
+```{r}
+mod2 = lm(ThirtyOne ~ Seven + Twelve + Score + factor(ReleaseMonth) + 
+    Theaters, data = data)
+summary(mod2)
+```
+
+```{r}
+newx = data.frame(Seven=240201260, MPAARating = "PG", Score = 96, Twelve=347823700, ReleaseMonth = "April", Theaters = 4371)
+predict.lm(mod2, newx, interval = "prediction", level = 0.95)
+```
+
+# References (Optional)
+SHARDA, R, and D DELEN. “Predicting Box-Office Success of Motion Pictures with Neural Networks.” Expert Systems with Applications, vol. 30, no. 2, Feb. 2006, pp. 243–254, https://doi.org/10.1016/j.eswa.2005.07.018 (https://doi.org/10.1016/j.eswa.2005.07.018)
+. Accessed 6 Apr. 2019.
+ 
